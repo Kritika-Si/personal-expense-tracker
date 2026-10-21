@@ -52,3 +52,20 @@ def create_transaction(transaction: TransactionCreate):
 
     finally:
         connection.close()
+
+@router.get("/", response_model=list[TransactionResponse])
+def get_transactions():
+    connection = get_connection()
+
+    try:
+        transactions = connection.execute(
+            """
+            SELECT * FROM expenses
+            ORDER BY date DESC, id DESC
+            """
+        ).fetchall()
+
+        return [dict(transaction) for transaction in transactions]
+
+    finally:
+        connection.close()
