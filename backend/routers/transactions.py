@@ -120,3 +120,28 @@ def update_transaction(transaction_id: int, transaction: TransactionUpdate):
     finally:
         connection.close()
 
+
+@router.delete(
+    "/{transaction_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_transaction(transaction_id: int):
+    connection = get_connection()
+
+    try:
+        cursor = connection.execute(
+            "DELETE FROM expenses WHERE id = ?",
+            (transaction_id,),
+        )
+
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Transaction not found",
+            )
+
+        connection.commit()
+
+    finally:
+        connection.close()
+
