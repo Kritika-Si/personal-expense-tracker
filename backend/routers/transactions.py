@@ -145,3 +145,35 @@ def delete_transaction(transaction_id: int):
     finally:
         connection.close()
 
+
+@router.get("/summary")
+def get_transaction_summary():
+    connection = get_connection()
+
+    try:
+        result = connection.execute(
+            """
+            SELECT
+                COALESCE(SUM(CASE
+                    WHEN transaction_type = 'income'
+                    THEN amount ELSE 0 END), 0) AS total_income,
+                COALESCE(SUM(CASE
+                    WHEN transaction_type = 'expense'
+                    THEN amount ELSE 0 END), 0) AS total_expenses,
+                COUNT(*) AS total_transactions
+            FROM expenses
+            """
+        ).fetchone()
+
+        total_income = result["total_income"]
+        total_expenses = result["total_expenses"]
+
+        return {
+            "total_income": total_income,
+            "total_expenses": total_expenses,
+            "balance": total_income - total_expenses,
+            "total_transactions": result["total_transactions"],
+        }
+
+    finally:
+        connection.close()
