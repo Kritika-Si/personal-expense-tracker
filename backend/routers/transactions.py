@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from backend.database import get_connection
-from backend.schemas import TransactionCreate, TransactionResponse
+from backend.schemas import TransactionCreate, TransactionUpdate, TransactionResponse
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
@@ -69,3 +69,54 @@ def get_transactions():
 
     finally:
         connection.close()
+
+
+@router.patch("/{transaction_id}", response_model=TransactionResponse)
+def update_transaction(transaction_id: int, transaction: TransactionUpdate):
+    connection = get_connection()
+
+    try:
+        existing = connection.execute(
+            "SELECT * FROM expenses WHERE id = ?",
+            (transaction_id,),
+        ).fetchone()
+
+        if existing is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Transaction not found",
+            )
+
+        updates = transaction.model_dump(exclude_unset=True)
+
+        if not updates:
+            return dict(existing)
+
+        if any(value is None for value in updates.values()):
+            raise HTTPException(
+                status_code=422,
+                detail="Transaction fields cannot be null",
+            )
+
+        if "date" in updates:
+            updates["date"] = updates["date"].isoformat()
+
+        columns = ", ".join(f"{field} = ?" for field in updates)
+        values = list(updates.values()) + [transaction_id]
+
+        connection.execute(
+            f"UPDATE expenses SET {columns} WHERE id = ?",
+            values,
+        )
+        connection.commit()
+
+        updated = connection.execute(
+            "SELECT * FROM expenses WHERE id = ?",
+            (transaction_id,),
+        ).fetchone()
+
+        return dict(updated)
+
+    finally:
+        connection.close()
+
