@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from backend.database import init_db
+from backend.routers.transactions import router as transactions_router
 
 
 @asynccontextmanager
@@ -18,6 +19,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.include_router(transactions_router)
 
 
 @app.get("/")
