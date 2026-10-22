@@ -12,7 +12,9 @@ function App() {
     total_transactions: 0,
   });
 
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +38,29 @@ function App() {
     }
 
     fetchSummary();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTransactions() {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/transactions/`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch transactions");
+        }
+
+        const data = await response.json();
+        setTransactions(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setTransactionsLoading(false);
+      }
+    }
+
+    fetchTransactions();
   }, []);
 
   const formatCurrency = (amount) =>
@@ -62,21 +87,27 @@ function App() {
           <div className="summary-card income">
             <h3>Total Income</h3>
             <h2>
-              {loading ? "Loading..." : formatCurrency(summary.total_income)}
+              {loading
+                ? "Loading..."
+                : formatCurrency(summary.total_income)}
             </h2>
           </div>
 
           <div className="summary-card expense">
             <h3>Total Expenses</h3>
             <h2>
-              {loading ? "Loading..." : formatCurrency(summary.total_expenses)}
+              {loading
+                ? "Loading..."
+                : formatCurrency(summary.total_expenses)}
             </h2>
           </div>
 
           <div className="summary-card balance">
             <h3>Current Balance</h3>
             <h2>
-              {loading ? "Loading..." : formatCurrency(summary.balance)}
+              {loading
+                ? "Loading..."
+                : formatCurrency(summary.balance)}
             </h2>
           </div>
         </section>
@@ -84,14 +115,46 @@ function App() {
         <section className="transactions-section">
           <div className="section-header">
             <h2>Recent Transactions</h2>
+
             <button className="add-btn" disabled>
               + Add Transaction
             </button>
           </div>
 
-          <p className="empty-message">
-            No transactions yet. Start tracking your expenses!
-          </p>
+          {transactionsLoading ? (
+            <p className="empty-message">
+              Loading transactions...
+            </p>
+          ) : transactions.length === 0 ? (
+            <p className="empty-message">
+              No transactions yet. Start tracking your expenses!
+            </p>
+          ) : (
+            <div className="transaction-list">
+              {transactions.map((transaction) => (
+                <div
+                  className="transaction-item"
+                  key={transaction.id}
+                >
+                  <div className="transaction-details">
+                    <h3>{transaction.title}</h3>
+                    <p>
+                      {transaction.category} • {transaction.date}
+                    </p>
+                  </div>
+
+                  <strong
+                    className={`transaction-amount ${transaction.transaction_type}`}
+                  >
+                    {transaction.transaction_type === "income"
+                      ? "+"
+                      : "-"}
+                    {formatCurrency(transaction.amount)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>
