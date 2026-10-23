@@ -18,7 +18,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [showForm, setShowForm] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -71,45 +73,54 @@ function App() {
     setRefreshKey((previous) => previous + 1);
   };
 
-  const handleTransactionAdded = () => {
-    setShowForm(false);
-    refreshDashboard();
+  const handleAdd = () => {
+    setEditingTransaction(null);
+    setShowForm(true);
   };
 
   const handleEdit = (transaction) => {
-    window.alert(`Edit feature coming soon: ${transaction.title}`);
+    setEditingTransaction(transaction);
+    setShowForm(true);
   };
 
-  
-const handleDelete = async (transaction) => {
-  const confirmed = window.confirm(
-    `Are you sure you want to delete "${transaction.title}"?`
-  );
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingTransaction(null);
+  };
 
-  if (!confirmed) {
-    return;
-  }
+  const handleTransactionSaved = () => {
+    handleCloseForm();
+    refreshDashboard();
+  };
 
-  try {
-    setError("");
-
-    const response = await fetch(
-      `${API_URL}/api/transactions/${transaction.id}`,
-      {
-        method: "DELETE",
-      }
+  const handleDelete = async (transaction) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${transaction.title}"?`
     );
 
-    if (!response.ok) {
-      throw new Error("Failed to delete transaction");
+    if (!confirmed) {
+      return;
     }
 
-    refreshDashboard();
-  } catch (err) {
-    setError(err.message);
-  }
-};
+    try {
+      setError("");
 
+      const response = await fetch(
+        `${API_URL}/api/transactions/${transaction.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete transaction");
+      }
+
+      refreshDashboard();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const formatCurrency = (amount) =>
     Number(amount).toLocaleString("en-IN", {
@@ -164,10 +175,7 @@ const handleDelete = async (transaction) => {
           <div className="section-header">
             <h2>Recent Transactions</h2>
 
-            <button
-              className="add-btn"
-              onClick={() => setShowForm(true)}
-            >
+            <button className="add-btn" onClick={handleAdd}>
               + Add Transaction
             </button>
           </div>
@@ -198,8 +206,10 @@ const handleDelete = async (transaction) => {
 
       {showForm && (
         <AddTransactionForm
-          onClose={() => setShowForm(false)}
-          onSuccess={handleTransactionAdded}
+          key={editingTransaction?.id ?? "new"}
+          transaction={editingTransaction}
+          onClose={handleCloseForm}
+          onSuccess={handleTransactionSaved}
         />
       )}
     </div>
