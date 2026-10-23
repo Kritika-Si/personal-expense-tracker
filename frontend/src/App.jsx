@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import AddTransactionForm from "./components/AddTransactionForm";
 import "./App.css";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -16,6 +17,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     async function fetchSummary() {
@@ -38,7 +41,7 @@ function App() {
     }
 
     fetchSummary();
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -61,7 +64,12 @@ function App() {
     }
 
     fetchTransactions();
-  }, []);
+  }, [refreshKey]);
+
+  const handleTransactionAdded = () => {
+    setShowForm(false);
+    setRefreshKey((previous) => previous + 1);
+  };
 
   const formatCurrency = (amount) =>
     Number(amount).toLocaleString("en-IN", {
@@ -116,7 +124,10 @@ function App() {
           <div className="section-header">
             <h2>Recent Transactions</h2>
 
-            <button className="add-btn" disabled>
+            <button
+              className="add-btn"
+              onClick={() => setShowForm(true)}
+            >
               + Add Transaction
             </button>
           </div>
@@ -157,6 +168,13 @@ function App() {
           )}
         </section>
       </main>
+
+      {showForm && (
+        <AddTransactionForm
+          onClose={() => setShowForm(false)}
+          onSuccess={handleTransactionAdded}
+        />
+      )}
     </div>
   );
 }
