@@ -1,14 +1,20 @@
 
 import { useState } from "react";
 
-function AddTransactionForm({ onClose, onSuccess }) {
+const API_URL = "http://127.0.0.1:8000";
+
+function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
+  const isEditing = transaction !== null;
+
   const [formData, setFormData] = useState({
-    title: "",
-    amount: "",
-    category: "Food",
-    transaction_type: "expense",
-    date: new Date().toLocaleDateString("en-CA"),
-    notes: "",
+    title: transaction?.title ?? "",
+    amount: transaction?.amount ?? "",
+    category: transaction?.category ?? "Food",
+    transaction_type: transaction?.transaction_type ?? "expense",
+    date:
+      transaction?.date ??
+      new Date().toLocaleDateString("en-CA"),
+    notes: transaction?.notes ?? "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -29,29 +35,46 @@ function AddTransactionForm({ onClose, onSuccess }) {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/transactions/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...formData,
-            title: formData.title.trim(),
-            amount: Number(formData.amount),
-            notes: formData.notes.trim(),
-          }),
-        }
-      );
+      const url = isEditing
+        ? `${API_URL}/api/transactions/${transaction.id}`
+        : `${API_URL}/api/transactions/`;
+
+      const method = isEditing ? "PATCH" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          title: formData.title.trim(),
+          amount: Number(formData.amount),
+          notes: formData.notes.trim(),
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to add transaction");
+        let message = isEditing
+          ? "Failed to update transaction"
+          : "Failed to add transaction";
+
+        try {
+          const errorData = await response.json();
+
+          if (typeof errorData.detail === "string") {
+            message = errorData.detail;
+          }
+        } catch {
+          // Keep the default error message.
+        }
+
+        throw new Error(message);
       }
 
       onSuccess();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -59,9 +82,17 @@ function AddTransactionForm({ onClose, onSuccess }) {
 
   return (
     <div className="form-overlay">
-      <div className="form-container">
+      <div
+        className="form-container"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transaction-form-heading"
+      >
         <div className="form-header">
-          <h2>Add New Transaction</h2>
+          <h2 id="transaction-form-heading">
+            {isEditing ? "Edit Transaction" : "Add New Transaction"}
+          </h2>
+
           <button
             type="button"
             className="close-btn"
@@ -154,6 +185,7 @@ function AddTransactionForm({ onClose, onSuccess }) {
               type="button"
               className="cancel-btn"
               onClick={onClose}
+              disabled={loading}
             >
               Cancel
             </button>
@@ -163,7 +195,11 @@ function AddTransactionForm({ onClose, onSuccess }) {
               className="submit-btn"
               disabled={loading}
             >
-              {loading ? "Saving..." : "Save Transaction"}
+              {loading
+                ? "Saving..."
+                : isEditing
+                  ? "Update Transaction"
+                  : "Save Transaction"}
             </button>
           </div>
         </form>
