@@ -80,9 +80,36 @@ function App() {
     window.alert(`Edit feature coming soon: ${transaction.title}`);
   };
 
-  const handleDelete = (transaction) => {
-    window.alert(`Delete feature coming soon: ${transaction.title}`);
-  };
+  
+const handleDelete = async (transaction) => {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete "${transaction.title}"?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setError("");
+
+    const response = await fetch(
+      `${API_URL}/api/transactions/${transaction.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to delete transaction");
+    }
+
+    refreshDashboard();
+  } catch (err) {
+    setError(err.message);
+  }
+};
+
 
   const formatCurrency = (amount) =>
     Number(amount).toLocaleString("en-IN", {
