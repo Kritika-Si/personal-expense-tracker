@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import AddTransactionForm from "./components/AddTransactionForm";
+import TransactionItem from "./components/TransactionItem";
 import "./App.css";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -66,9 +67,21 @@ function App() {
     fetchTransactions();
   }, [refreshKey]);
 
+  const refreshDashboard = () => {
+    setRefreshKey((previous) => previous + 1);
+  };
+
   const handleTransactionAdded = () => {
     setShowForm(false);
-    setRefreshKey((previous) => previous + 1);
+    refreshDashboard();
+  };
+
+  const handleEdit = (transaction) => {
+    window.alert(`Edit feature coming soon: ${transaction.title}`);
+  };
+
+  const handleDelete = (transaction) => {
+    window.alert(`Delete feature coming soon: ${transaction.title}`);
   };
 
   const formatCurrency = (amount) =>
@@ -143,26 +156,13 @@ function App() {
           ) : (
             <div className="transaction-list">
               {transactions.map((transaction) => (
-                <div
-                  className="transaction-item"
+                <TransactionItem
                   key={transaction.id}
-                >
-                  <div className="transaction-details">
-                    <h3>{transaction.title}</h3>
-                    <p>
-                      {transaction.category} • {transaction.date}
-                    </p>
-                  </div>
-
-                  <strong
-                    className={`transaction-amount ${transaction.transaction_type}`}
-                  >
-                    {transaction.transaction_type === "income"
-                      ? "+"
-                      : "-"}
-                    {formatCurrency(transaction.amount)}
-                  </strong>
-                </div>
+                  transaction={transaction}
+                  formatCurrency={formatCurrency}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           )}
