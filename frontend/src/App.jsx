@@ -172,7 +172,6 @@ function App() {
     const search = searchTerm.trim().toLowerCase();
 
     const matchesSearch = title.includes(search);
-
     const category = transaction.category || "Others";
 
     const matchesCategory =
@@ -196,6 +195,75 @@ function App() {
     searchTerm.trim() !== "" ||
     selectedCategory !== "" ||
     selectedType !== "";
+
+  // Export the currently filtered transactions as a CSV file.
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) {
+      setError("There are no matching transactions to export.");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Title",
+      "Category",
+      "Type",
+      "Amount",
+      "Date",
+    ];
+
+    // Escape CSV values and reduce the risk of spreadsheet formula injection.
+    const escapeCSV = (value, protectFormula = false) => {
+      let text = String(value ?? "");
+
+      if (
+        protectFormula &&
+        /^[\s\u0000-\u001F]*[=+\-@]/.test(text)
+      ) {
+        text = `'${text}`;
+      }
+
+      return `"${text.replace(/"/g, '""')}"`;
+    };
+
+    const rows = filteredTransactions.map((transaction) => [
+      transaction.id,
+      transaction.title,
+      transaction.category || "Others",
+      transaction.transaction_type,
+      transaction.amount,
+      transaction.date ?? "",
+    ]);
+
+    const csvContent = [
+      headers.map((header) => escapeCSV(header)).join(","),
+      ...rows.map((row) =>
+        row
+          .map((value, index) =>
+            escapeCSV(value, [1, 2, 3, 5].includes(index))
+          )
+          .join(",")
+      ),
+    ].join("\r\n");
+
+    // Add a BOM to improve UTF-8 compatibility with Excel.
+    const blob = new Blob(["\uFEFF", csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `transactions-${selectedMonth || "all-months"}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Revoke after the browser has had time to start the download.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   const refreshDashboard = () => {
     setRefreshKey((previous) => previous + 1);
@@ -375,9 +443,7 @@ function App() {
           <h2>Expense Breakdown by Category</h2>
 
           {transactionsLoading ? (
-            <p className="empty-message">
-              Loading expense chart...
-            </p>
+            <p className="empty-message">Loading expense chart...</p>
           ) : expenseChartData.length === 0 ? (
             <p className="empty-message">
               No expenses available for {monthLabel}. Add an expense
@@ -403,9 +469,7 @@ function App() {
                       <Cell
                         key={entry.name}
                         fill={
-                          CHART_COLORS[
-                            index % CHART_COLORS.length
-                          ]
+                          CHART_COLORS[index % CHART_COLORS.length]
                         }
                       />
                     ))}
@@ -469,8 +533,7 @@ function App() {
                     allowDecimals={false}
                     domain={[
                       0,
-                      (dataMax) =>
-                        dataMax > 0 ? dataMax * 1.2 : 100,
+                      (dataMax) => (dataMax > 0 ? dataMax * 1.2 : 100),
                     ]}
                   />
 
@@ -493,10 +556,7 @@ function App() {
                     maxBarSize={90}
                   >
                     {comparisonData.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={entry.fill}
-                      />
+                      <Cell key={entry.name} fill={entry.fill} />
                     ))}
 
                     <LabelList
@@ -521,9 +581,23 @@ function App() {
           <div className="section-header">
             <h2>Transactions — {monthLabel}</h2>
 
-            <button className="add-btn" onClick={handleAdd}>
-              + Add Transaction
-            </button>
+            <div className="transaction-actions">
+              <button
+                type="button"
+                className="export-btn"
+                onClick={handleExportCSV}
+                disabled={
+                  transactionsLoading ||
+                  filteredTransactions.length === 0
+                }
+              >
+                Export CSV
+              </button>
+
+              <button className="add-btn" onClick={handleAdd}>
+                + Add Transaction
+              </button>
+            </div>
           </div>
 
           {/* Search and filter controls */}
@@ -567,9 +641,7 @@ function App() {
             </div>
 
             <div className="filter-control">
-              <label htmlFor="type-filter">
-                Filter by type
-              </label>
+              <label htmlFor="type-filter">Filter by type</label>
 
               <select
                 id="type-filter"
@@ -603,9 +675,7 @@ function App() {
           )}
 
           {transactionsLoading ? (
-            <p className="empty-message">
-              Loading transactions...
-            </p>
+            <p className="empty-message">Loading transactions...</p>
           ) : transactions.length === 0 ? (
             <p className="empty-message">
               No transactions found for {monthLabel}.

@@ -623,3 +623,43 @@
     width: 100%;
   }
 }
+/* Transaction action buttons */
+.transaction-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Export CSV button */
+.export-btn {
+  padding: 10px 16px;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.export-btn:hover:not(:disabled) {
+  background: #d1fae5;
+  transform: translateY(-1px);
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .section-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .transaction-actions {
+    flex-wrap: wrap;
+  }
+}
