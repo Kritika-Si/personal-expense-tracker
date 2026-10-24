@@ -57,6 +57,12 @@ function App() {
   // Defaults to the current month. Empty means all months.
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
 
+  // Search and filter states.
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+
+  // Fetch dashboard summary.
   useEffect(() => {
     let cancelled = false;
 
@@ -103,6 +109,7 @@ function App() {
     };
   }, [selectedMonth, refreshKey]);
 
+  // Fetch transactions for the selected month or all months.
   useEffect(() => {
     let cancelled = false;
 
@@ -148,6 +155,47 @@ function App() {
       cancelled = true;
     };
   }, [selectedMonth, refreshKey]);
+
+  // Get available categories.
+  // Transactions without a category are grouped under "Others".
+  const categories = [
+    ...new Set(
+      transactions.map(
+        (transaction) => transaction.category || "Others"
+      )
+    ),
+  ].sort();
+
+  // Apply search, category, and transaction-type filters together.
+  const filteredTransactions = transactions.filter((transaction) => {
+    const title = String(transaction.title || "").toLowerCase();
+    const search = searchTerm.trim().toLowerCase();
+
+    const matchesSearch = title.includes(search);
+
+    const category = transaction.category || "Others";
+
+    const matchesCategory =
+      !selectedCategory || category === selectedCategory;
+
+    const matchesType =
+      !selectedType ||
+      transaction.transaction_type === selectedType;
+
+    return matchesSearch && matchesCategory && matchesType;
+  });
+
+  // Clear all transaction filters.
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setSelectedType("");
+  };
+
+  const hasActiveFilters =
+    searchTerm.trim() !== "" ||
+    selectedCategory !== "" ||
+    selectedType !== "";
 
   const refreshDashboard = () => {
     setRefreshKey((previous) => previous + 1);
@@ -419,7 +467,11 @@ function App() {
                     axisLine={false}
                     tickLine={false}
                     allowDecimals={false}
-                    domain={[0, (dataMax) => (dataMax > 0 ? dataMax * 1.2 : 100)]}
+                    domain={[
+                      0,
+                      (dataMax) =>
+                        dataMax > 0 ? dataMax * 1.2 : 100,
+                    ]}
                   />
 
                   <Tooltip
@@ -474,6 +526,82 @@ function App() {
             </button>
           </div>
 
+          {/* Search and filter controls */}
+          <div className="transaction-filters">
+            <div className="filter-control">
+              <label htmlFor="transaction-search">
+                Search by title
+              </label>
+
+              <input
+                id="transaction-search"
+                type="search"
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(event) =>
+                  setSearchTerm(event.target.value)
+                }
+              />
+            </div>
+
+            <div className="filter-control">
+              <label htmlFor="category-filter">
+                Filter by category
+              </label>
+
+              <select
+                id="category-filter"
+                value={selectedCategory}
+                onChange={(event) =>
+                  setSelectedCategory(event.target.value)
+                }
+              >
+                <option value="">All Categories</option>
+
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-control">
+              <label htmlFor="type-filter">
+                Filter by type
+              </label>
+
+              <select
+                id="type-filter"
+                value={selectedType}
+                onChange={(event) =>
+                  setSelectedType(event.target.value)
+                }
+              >
+                <option value="">All Types</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              className="all-months-btn"
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          {/* Matching transaction count */}
+          {!transactionsLoading && transactions.length > 0 && (
+            <p className="filter-results-count">
+              Showing {filteredTransactions.length} of{" "}
+              {transactions.length} transactions
+            </p>
+          )}
+
           {transactionsLoading ? (
             <p className="empty-message">
               Loading transactions...
@@ -482,9 +610,14 @@ function App() {
             <p className="empty-message">
               No transactions found for {monthLabel}.
             </p>
+          ) : filteredTransactions.length === 0 ? (
+            <p className="empty-message">
+              No transactions match your search or filters.
+              Try changing your filters or click Clear Filters.
+            </p>
           ) : (
             <div className="transaction-list">
-              {transactions.map((transaction) => (
+              {filteredTransactions.map((transaction) => (
                 <TransactionItem
                   key={transaction.id}
                   transaction={transaction}
