@@ -1,10 +1,18 @@
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query
+from datetime import date
 
 from backend.database import get_connection
-from backend.schemas import TransactionCreate, TransactionUpdate, TransactionResponse
+from backend.schemas import (
+    TransactionCreate,
+    TransactionUpdate,
+    TransactionResponse,
+)
 
-router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
+router = APIRouter(
+    prefix="/api/transactions",
+    tags=["Transactions"],
+)
 
 
 @router.post(
@@ -53,17 +61,39 @@ def create_transaction(transaction: TransactionCreate):
     finally:
         connection.close()
 
+
 @router.get("/", response_model=list[TransactionResponse])
-def get_transactions():
+def get_transactions(
+    month: int | None = Query(default=None, ge=1, le=12),
+    year: int | None = Query(default=None, ge=2000, le=2100),
+):
+    if (month is None) != (year is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide both month and year, or neither.",
+        )
+
     connection = get_connection()
 
     try:
-        transactions = connection.execute(
-            """
-            SELECT * FROM expenses
-            ORDER BY date DESC, id DESC
-            """
-        ).fetchall()
+        if month is not None and year is not None:
+            selected_month = f"{year:04d}-{month:02d}"
+
+            transactions = connection.execute(
+                """
+                SELECT * FROM expenses
+                WHERE substr(date, 1, 7) = ?
+                ORDER BY date DESC, id DESC
+                """,
+                (selected_month,),
+            ).fetchall()
+        else:
+            transactions = connection.execute(
+                """
+                SELECT * FROM expenses
+                ORDER BY date DESC, id DESC
+                """
+            ).fetchall()
 
         return [dict(transaction) for transaction in transactions]
 
@@ -71,8 +101,14 @@ def get_transactions():
         connection.close()
 
 
-@router.patch("/{transaction_id}", response_model=TransactionResponse)
-def update_transaction(transaction_id: int, transaction: TransactionUpdate):
+@router.patch(
+    "/{transaction_id}",
+    response_model=TransactionResponse,
+)
+def update_transaction(
+    transaction_id: int,
+    transaction: TransactionUpdate,
+):
     connection = get_connection()
 
     try:
@@ -101,7 +137,9 @@ def update_transaction(transaction_id: int, transaction: TransactionUpdate):
         if "date" in updates:
             updates["date"] = updates["date"].isoformat()
 
-        columns = ", ".join(f"{field} = ?" for field in updates)
+        columns = ", ".join(
+            f"{field} = ?" for field in updates
+        )
         values = list(updates.values()) + [transaction_id]
 
         connection.execute(
@@ -147,23 +185,51 @@ def delete_transaction(transaction_id: int):
 
 
 @router.get("/summary")
-def get_transaction_summary():
+def get_transaction_summary(
+    month: int | None = Query(default=None, ge=1, le=12),
+    year: int | None = Query(default=None, ge=2000, le=2100),
+):
+    if (month is None) != (year is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide both month and year, or neither.",
+        )
+
     connection = get_connection()
 
     try:
-        result = connection.execute(
-            """
-            SELECT
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = 'income'
-                    THEN amount ELSE 0 END), 0) AS total_income,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = 'expense'
-                    THEN amount ELSE 0 END), 0) AS total_expenses,
-                COUNT(*) AS total_transactions
-            FROM expenses
-            """
-        ).fetchone()
+        if month is not None and year is not None:
+            selected_month = f"{year:04d}-{month:02d}"
+
+            result = connection.execute(
+                """
+                SELECT
+                    COALESCE(SUM(CASE
+                        WHEN transaction_type = 'income'
+                        THEN amount ELSE 0 END), 0) AS total_income,
+                    COALESCE(SUM(CASE
+                        WHEN transaction_type = 'expense'
+                        THEN amount ELSE 0 END), 0) AS total_expenses,
+                    COUNT(*) AS total_transactions
+                FROM expenses
+                WHERE substr(date, 1, 7) = ?
+                """,
+                (selected_month,),
+            ).fetchone()
+        else:
+            result = connection.execute(
+                """
+                SELECT
+                    COALESCE(SUM(CASE
+                        WHEN transaction_type = 'income'
+                        THEN amount ELSE 0 END), 0) AS total_income,
+                    COALESCE(SUM(CASE
+                        WHEN transaction_type = 'expense'
+                        THEN amount ELSE 0 END), 0) AS total_expenses,
+                    COUNT(*) AS total_transactions
+                FROM expenses
+                """
+            ).fetchone()
 
         total_income = result["total_income"]
         total_expenses = result["total_expenses"]
