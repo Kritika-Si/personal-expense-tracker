@@ -529,3 +529,97 @@
     height: 280px;
   }
 }
+/* Transaction Search and Filters */
+.transaction-filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 24px 0 12px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.filter-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.filter-control label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.filter-control input,
+.filter-control select {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-control input:focus,
+.filter-control select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.transaction-filters .all-months-btn {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.transaction-filters .all-months-btn:hover:not(:disabled) {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.transaction-filters .all-months-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-results-count {
+  margin: 12px 0 18px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Responsive layout for smaller screens */
+@media (max-width: 600px) {
+  .transaction-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .filter-control {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .transaction-filters .all-months-btn {
+    width: 100%;
+  }
+}
