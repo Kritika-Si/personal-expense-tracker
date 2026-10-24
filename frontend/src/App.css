@@ -396,3 +396,136 @@
     flex-wrap: wrap;
   }
 }
+
+/* Expense Analytics Chart */
+
+.analytics-section {
+  margin: 28px 0;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.analytics-section h2 {
+  margin: 0 0 20px;
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.expense-chart {
+  width: 100%;
+  min-width: 0;
+  height: 320px;
+}
+
+@media (max-width: 480px) {
+  .analytics-section {
+    padding: 16px;
+  }
+
+  .analytics-section h2 {
+    font-size: 18px;
+  }
+}
+
+/* Monthly Dashboard Filter */
+.month-filter-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 24px 0;
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.month-filter-heading h2 {
+  margin: 0 0 6px;
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.month-filter-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.month-filter-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.month-filter-controls label {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.month-filter-controls input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+}
+
+.all-months-btn {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.all-months-btn:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.all-months-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .month-filter-section {
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .month-filter-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .month-filter-controls input,
+  .all-months-btn {
+    width: 100%;
+  }
+}
+
+/* Monthly Income vs Expenses Bar Chart */
+.comparison-chart {
+  width: 100%;
+  min-width: 0;
+  height: 320px;
+}
+
+@media (max-width: 480px) {
+  .comparison-chart {
+    height: 280px;
+  }
+}
