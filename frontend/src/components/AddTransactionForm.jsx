@@ -1,7 +1,30 @@
-
 import { useState } from "react";
 
 const API_URL = "http://127.0.0.1:8000";
+
+function getTodayDate() {
+  const now = new Date();
+  const localDate = new Date(
+    now.getTime() - now.getTimezoneOffset() * 60 * 1000
+  );
+
+  return localDate.toISOString().slice(0, 10);
+}
+
+function getErrorMessage(errorData, fallback) {
+  if (typeof errorData?.detail === "string") {
+    return errorData.detail;
+  }
+
+  if (Array.isArray(errorData?.detail)) {
+    return errorData.detail
+      .map((item) => item.msg)
+      .filter(Boolean)
+      .join(". ");
+  }
+
+  return fallback;
+}
 
 function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
   const isEditing = transaction !== null;
@@ -11,9 +34,7 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
     amount: transaction?.amount ?? "",
     category: transaction?.category ?? "Food",
     transaction_type: transaction?.transaction_type ?? "expense",
-    date:
-      transaction?.date ??
-      new Date().toLocaleDateString("en-CA"),
+    date: transaction?.date ?? getTodayDate(),
     notes: transaction?.notes ?? "",
   });
 
@@ -27,11 +48,86 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
       ...previous,
       [name]: value,
     }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const validateForm = () => {
+    if (!formData.title.trim()) {
+      return "Please enter a transaction title.";
+    }
+
+    if (formData.title.trim().length > 100) {
+      return "The title must be 100 characters or fewer.";
+    }
+
+    const amount = Number(formData.amount);
+
+    if (
+      formData.amount === "" ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      return "Please enter an amount greater than zero.";
+    }
+
+    if (!["income", "expense"].includes(formData.transaction_type)) {
+      return "Please select a valid transaction type.";
+    }
+
+    if (!formData.category.trim()) {
+      return "Please select a category.";
+    }
+
+    if (!formData.date || !/^\d{4}-\d{2}-\d{2}$/.test(formData.date)) {
+      return "Please select a valid transaction date.";
+    }
+
+    const [, year, month, day] = formData.date.match(
+      /^(\d{4})-(\d{2})-(\d{2})$/
+    ) || [];
+
+    if (!year || !month || !day) {
+      return "Please select a valid transaction date.";
+    }
+
+    const date = new Date(
+      Date.UTC(Number(year), Number(month) - 1, Number(day))
+    );
+
+    if (
+      date.getUTCFullYear() !== Number(year) ||
+      date.getUTCMonth() !== Number(month) - 1 ||
+      date.getUTCDate() !== Number(day)
+    ) {
+    return "Please enter a real calendar date.";
+  }
+
+    if (formData.notes.length > 500) {
+      return "Notes must be 500 characters or fewer.";
+    }
+
+    return "";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (loading) {
+      return;
+    }
+
     setError("");
+
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -41,40 +137,46 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
 
       const method = isEditing ? "PATCH" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          title: formData.title.trim(),
-          amount: Number(formData.amount),
-          notes: formData.notes.trim(),
-        }),
-      });
+      let response;
+
+      try {
+        response = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...formData,
+            title: formData.title.trim(),
+            amount: Number(formData.amount),
+            notes: formData.notes.trim(),
+          }),
+        });
+      } catch {
+        throw new Error(
+          "Unable to connect to the server. Please check that the backend is running and try again."
+        );
+      }
 
       if (!response.ok) {
-        let message = isEditing
-          ? "Failed to update transaction"
-          : "Failed to add transaction";
+        let errorData = null;
 
         try {
-          const errorData = await response.json();
-
-          if (typeof errorData.detail === "string") {
-            message = errorData.detail;
-          }
+          errorData = await response.json();
         } catch {
-          // Keep the default error message.
+          // The server may return an empty or non-JSON error response.
         }
 
-        throw new Error(message);
+        const fallback = isEditing
+          ? "Could not update the transaction. Please try again."
+          : "Could not save the transaction. Please try again.";
+
+        throw new Error(getErrorMessage(errorData, fallback));
       }
 
       onSuccess();
     } catch (err) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -98,12 +200,13 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             className="close-btn"
             onClick={onClose}
             aria-label="Close form"
+            disabled={loading}
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <label htmlFor="transaction-title">Title</label>
           <input
             id="transaction-title"
@@ -112,7 +215,9 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             value={formData.title}
             onChange={handleChange}
             placeholder="e.g. Grocery shopping"
+            maxLength={100}
             required
+            disabled={loading}
           />
 
           <label htmlFor="transaction-amount">Amount (₹)</label>
@@ -126,6 +231,7 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             step="0.01"
             placeholder="Enter amount"
             required
+            disabled={loading}
           />
 
           <label htmlFor="transaction-type">Transaction Type</label>
@@ -134,6 +240,7 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             name="transaction_type"
             value={formData.transaction_type}
             onChange={handleChange}
+            disabled={loading}
           >
             <option value="expense">Expense</option>
             <option value="income">Income</option>
@@ -145,6 +252,7 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             name="category"
             value={formData.category}
             onChange={handleChange}
+            disabled={loading}
           >
             <option value="Food">Food</option>
             <option value="Travel">Travel</option>
@@ -162,6 +270,7 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             value={formData.date}
             onChange={handleChange}
             required
+            disabled={loading}
           />
 
           <label htmlFor="transaction-notes">Notes (Optional)</label>
@@ -172,6 +281,8 @@ function AddTransactionForm({ onClose, onSuccess, transaction = null }) {
             onChange={handleChange}
             placeholder="Add any additional details..."
             rows="3"
+            maxLength={500}
+            disabled={loading}
           />
 
           {error && (
