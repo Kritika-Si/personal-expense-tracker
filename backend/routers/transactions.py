@@ -142,11 +142,18 @@ def update_transaction(
         )
         values = list(updates.values()) + [transaction_id]
 
-        connection.execute(
-            f"UPDATE expenses SET {columns} WHERE id = ?",
-            values,
-        )
-        connection.commit()
+        try:
+            connection.execute(
+                f"UPDATE expenses SET {columns} WHERE id = ?",
+                values,
+            )
+            connection.commit()
+        except Exception as exc:
+            connection.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to update transaction",
+            ) from exc
 
         updated = connection.execute(
             "SELECT * FROM expenses WHERE id = ?",
