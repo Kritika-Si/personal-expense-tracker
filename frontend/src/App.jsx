@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   ResponsiveContainer,
@@ -21,23 +22,31 @@ import "./App.css";
 const API_URL = "http://127.0.0.1:8000";
 
 const CHART_COLORS = [
-  "#6366f1",
+  "#8b5cf6",
   "#f59e0b",
   "#10b981",
   "#ec4899",
-  "#8b5cf6",
   "#06b6d4",
+  "#a78bfa",
 ];
 
 function getCurrentMonth() {
   const now = new Date();
-
   return `${now.getFullYear()}-${String(
     now.getMonth() + 1
   ).padStart(2, "0")}`;
 }
 
 function App() {
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("expense-tracker-theme") || "light"
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("expense-tracker-theme", theme);
+  }, [theme]);
+
   const [summary, setSummary] = useState({
     total_income: 0,
     total_expenses: 0,
@@ -54,15 +63,11 @@ function App() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Defaults to the current month. Empty means all months.
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
-
-  // Search and filter states.
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedType, setSelectedType] = useState("");
 
-  // Fetch dashboard summary.
   useEffect(() => {
     let cancelled = false;
 
@@ -92,24 +97,18 @@ function App() {
           setError("");
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err.message);
-        }
+        if (!cancelled) setError(err.message);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchSummary();
-
     return () => {
       cancelled = true;
     };
   }, [selectedMonth, refreshKey]);
 
-  // Fetch transactions for the selected month or all months.
   useEffect(() => {
     let cancelled = false;
 
@@ -124,9 +123,7 @@ function App() {
             })()
           : "";
 
-        const response = await fetch(
-          `${API_URL}/api/transactions/${query}`
-        );
+        const response = await fetch(`${API_URL}/api/transactions/${query}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch transactions");
@@ -139,38 +136,27 @@ function App() {
           setError("");
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err.message);
-        }
+        if (!cancelled) setError(err.message);
       } finally {
-        if (!cancelled) {
-          setTransactionsLoading(false);
-        }
+        if (!cancelled) setTransactionsLoading(false);
       }
     }
 
     fetchTransactions();
-
     return () => {
       cancelled = true;
     };
   }, [selectedMonth, refreshKey]);
 
-  // Get available categories.
-  // Transactions without a category are grouped under "Others".
   const categories = [
     ...new Set(
-      transactions.map(
-        (transaction) => transaction.category || "Others"
-      )
+      transactions.map((transaction) => transaction.category || "Others")
     ),
   ].sort();
 
-  // Apply search, category, and transaction-type filters together.
   const filteredTransactions = transactions.filter((transaction) => {
     const title = String(transaction.title || "").toLowerCase();
     const search = searchTerm.trim().toLowerCase();
-
     const matchesSearch = title.includes(search);
     const category = transaction.category || "Others";
 
@@ -178,13 +164,11 @@ function App() {
       !selectedCategory || category === selectedCategory;
 
     const matchesType =
-      !selectedType ||
-      transaction.transaction_type === selectedType;
+      !selectedType || transaction.transaction_type === selectedType;
 
     return matchesSearch && matchesCategory && matchesType;
   });
 
-  // Clear all transaction filters.
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("");
@@ -196,23 +180,14 @@ function App() {
     selectedCategory !== "" ||
     selectedType !== "";
 
-  // Export the currently filtered transactions as a CSV file.
   const handleExportCSV = () => {
     if (filteredTransactions.length === 0) {
       setError("There are no matching transactions to export.");
       return;
     }
 
-    const headers = [
-      "ID",
-      "Title",
-      "Category",
-      "Type",
-      "Amount",
-      "Date",
-    ];
+    const headers = ["ID", "Title", "Category", "Type", "Amount", "Date"];
 
-    // Escape CSV values and reduce the risk of spreadsheet formula injection.
     const escapeCSV = (value, protectFormula = false) => {
       let text = String(value ?? "");
 
@@ -246,7 +221,6 @@ function App() {
       ),
     ].join("\r\n");
 
-    // Add a BOM to improve UTF-8 compatibility with Excel.
     const blob = new Blob(["\uFEFF", csvContent], {
       type: "text/csv;charset=utf-8;",
     });
@@ -261,7 +235,6 @@ function App() {
     link.click();
     document.body.removeChild(link);
 
-    // Revoke after the browser has had time to start the download.
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
@@ -321,17 +294,12 @@ function App() {
       maximumFractionDigits: 2,
     });
 
-  // Calculate expenses by category for the pie chart.
   const categoryTotals = transactions
-    .filter(
-      (transaction) => transaction.transaction_type === "expense"
-    )
+    .filter((transaction) => transaction.transaction_type === "expense")
     .reduce((totals, transaction) => {
       const category = transaction.category || "Others";
-
       totals[category] =
         (totals[category] || 0) + Number(transaction.amount);
-
       return totals;
     }, {});
 
@@ -339,7 +307,6 @@ function App() {
     .map(([name, value]) => ({ name, value }))
     .filter((item) => item.value > 0);
 
-  // Compare total income and expenses for the selected period.
   const comparisonData = [
     {
       name: "Income",
@@ -349,22 +316,39 @@ function App() {
     {
       name: "Expenses",
       amount: Number(summary.total_expenses),
-      fill: "#ef4444",
+      fill: "#f472b6",
     },
   ];
 
   const monthLabel = selectedMonth
-    ? new Date(`${selectedMonth}-15T12:00:00`).toLocaleDateString(
-        "en-IN",
-        { month: "long", year: "numeric" }
-      )
+    ? new Date(`${selectedMonth}-15T12:00:00`).toLocaleDateString("en-IN", {
+        month: "long",
+        year: "numeric",
+      })
     : "All Months";
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>💰 Personal Expense Tracker</h1>
-        <p>Manage your income, expenses, and savings in one place.</p>
+        <div className="header-top">
+          <div className="header-spacer" aria-hidden="true" />
+
+          <div className="header-title">
+            <h1>💜 Personal Expense Tracker</h1>
+            <p>Manage your income, expenses, and savings in one place.</p>
+          </div>
+
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() =>
+              setTheme((current) => (current === "light" ? "dark" : "light"))
+            }
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+          </button>
+        </div>
       </header>
 
       <main className="dashboard">
@@ -374,7 +358,6 @@ function App() {
           </p>
         )}
 
-        {/* Month filter */}
         <section className="month-filter-section">
           <div className="month-filter-heading">
             <h2>Dashboard Overview</h2>
@@ -383,7 +366,6 @@ function App() {
 
           <div className="month-filter-controls">
             <label htmlFor="month-filter">Select month</label>
-
             <input
               id="month-filter"
               type="month"
@@ -408,37 +390,23 @@ function App() {
           </div>
         </section>
 
-        {/* Summary cards */}
         <section className="summary-section">
           <div className="summary-card income">
             <h3>Total Income</h3>
-            <h2>
-              {loading
-                ? "Loading..."
-                : formatCurrency(summary.total_income)}
-            </h2>
+            <h2>{loading ? "Loading..." : formatCurrency(summary.total_income)}</h2>
           </div>
 
           <div className="summary-card expense">
             <h3>Total Expenses</h3>
-            <h2>
-              {loading
-                ? "Loading..."
-                : formatCurrency(summary.total_expenses)}
-            </h2>
+            <h2>{loading ? "Loading..." : formatCurrency(summary.total_expenses)}</h2>
           </div>
 
           <div className="summary-card balance">
             <h3>Current Balance</h3>
-            <h2>
-              {loading
-                ? "Loading..."
-                : formatCurrency(summary.balance)}
-            </h2>
+            <h2>{loading ? "Loading..." : formatCurrency(summary.balance)}</h2>
           </div>
         </section>
 
-        {/* Expense breakdown pie chart */}
         <section className="analytics-section">
           <h2>Expense Breakdown by Category</h2>
 
@@ -446,8 +414,8 @@ function App() {
             <p className="empty-message">Loading expense chart...</p>
           ) : expenseChartData.length === 0 ? (
             <p className="empty-message">
-              No expenses available for {monthLabel}. Add an expense
-              to see your category breakdown.
+              No expenses available for {monthLabel}. Add an expense to see
+              your category breakdown.
             </p>
           ) : (
             <div className="expense-chart">
@@ -468,17 +436,11 @@ function App() {
                     {expenseChartData.map((entry, index) => (
                       <Cell
                         key={entry.name}
-                        fill={
-                          CHART_COLORS[index % CHART_COLORS.length]
-                        }
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ))}
                   </Pie>
-
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value)}
-                  />
-
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -486,14 +448,11 @@ function App() {
           )}
         </section>
 
-        {/* Income versus expenses bar chart */}
         <section className="analytics-section">
           <h2>Income vs Expenses — {monthLabel}</h2>
 
           {loading ? (
-            <p className="empty-message">
-              Loading comparison chart...
-            </p>
+            <p className="empty-message">Loading comparison chart...</p>
           ) : summary.total_transactions === 0 ? (
             <p className="empty-message">
               No transactions available for {monthLabel}.
@@ -503,31 +462,25 @@ function App() {
               <ResponsiveContainer width="100%" height={340}>
                 <BarChart
                   data={comparisonData}
-                  margin={{
-                    top: 30,
-                    right: 25,
-                    left: 15,
-                    bottom: 10,
-                  }}
+                  margin={{ top: 30, right: 25, left: 15, bottom: 10 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
+                    stroke="var(--border-color)"
                   />
-
                   <XAxis
                     dataKey="name"
-                    tick={{ fill: "#4b5563", fontSize: 14 }}
-                    axisLine={{ stroke: "#d1d5db" }}
+                    tick={{ fill: "var(--text-secondary)", fontSize: 14 }}
+                    axisLine={{ stroke: "var(--border-color)" }}
                     tickLine={false}
                   />
-
                   <YAxis
                     width={85}
                     tickFormatter={(value) =>
                       `₹${Number(value).toLocaleString("en-IN")}`
                     }
-                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
                     allowDecimals={false}
@@ -536,19 +489,15 @@ function App() {
                       (dataMax) => (dataMax > 0 ? dataMax * 1.2 : 100),
                     ]}
                   />
-
                   <Tooltip
-                    formatter={(value) => [
-                      formatCurrency(value),
-                      "Amount",
-                    ]}
+                    formatter={(value) => [formatCurrency(value), "Amount"]}
                     contentStyle={{
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text-primary)",
                       borderRadius: "8px",
-                      border: "1px solid #e5e7eb",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                      border: "1px solid var(--border-color)",
                     }}
                   />
-
                   <Bar
                     dataKey="amount"
                     name="Amount"
@@ -558,13 +507,12 @@ function App() {
                     {comparisonData.map((entry) => (
                       <Cell key={entry.name} fill={entry.fill} />
                     ))}
-
                     <LabelList
                       dataKey="amount"
                       position="top"
                       formatter={(value) => formatCurrency(value)}
                       style={{
-                        fill: "#1f2937",
+                        fill: "var(--text-primary)",
                         fontSize: 13,
                         fontWeight: 600,
                       }}
@@ -576,7 +524,6 @@ function App() {
           )}
         </section>
 
-        {/* Transactions list */}
         <section className="transactions-section">
           <div className="section-header">
             <h2>Transactions — {monthLabel}</h2>
@@ -587,8 +534,7 @@ function App() {
                 className="export-btn"
                 onClick={handleExportCSV}
                 disabled={
-                  transactionsLoading ||
-                  filteredTransactions.length === 0
+                  transactionsLoading || filteredTransactions.length === 0
                 }
               >
                 Export CSV
@@ -600,38 +546,26 @@ function App() {
             </div>
           </div>
 
-          {/* Search and filter controls */}
           <div className="transaction-filters">
             <div className="filter-control">
-              <label htmlFor="transaction-search">
-                Search by title
-              </label>
-
+              <label htmlFor="transaction-search">Search by title</label>
               <input
                 id="transaction-search"
                 type="search"
                 placeholder="Search transactions..."
                 value={searchTerm}
-                onChange={(event) =>
-                  setSearchTerm(event.target.value)
-                }
+                onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
 
             <div className="filter-control">
-              <label htmlFor="category-filter">
-                Filter by category
-              </label>
-
+              <label htmlFor="category-filter">Filter by category</label>
               <select
                 id="category-filter"
                 value={selectedCategory}
-                onChange={(event) =>
-                  setSelectedCategory(event.target.value)
-                }
+                onChange={(event) => setSelectedCategory(event.target.value)}
               >
                 <option value="">All Categories</option>
-
                 {categories.map((category) => (
                   <option key={category} value={category}>
                     {category}
@@ -642,13 +576,10 @@ function App() {
 
             <div className="filter-control">
               <label htmlFor="type-filter">Filter by type</label>
-
               <select
                 id="type-filter"
                 value={selectedType}
-                onChange={(event) =>
-                  setSelectedType(event.target.value)
-                }
+                onChange={(event) => setSelectedType(event.target.value)}
               >
                 <option value="">All Types</option>
                 <option value="income">Income</option>
@@ -666,11 +597,10 @@ function App() {
             </button>
           </div>
 
-          {/* Matching transaction count */}
           {!transactionsLoading && transactions.length > 0 && (
             <p className="filter-results-count">
-              Showing {filteredTransactions.length} of{" "}
-              {transactions.length} transactions
+              Showing {filteredTransactions.length} of {transactions.length}{" "}
+              transactions
             </p>
           )}
 
@@ -682,8 +612,8 @@ function App() {
             </p>
           ) : filteredTransactions.length === 0 ? (
             <p className="empty-message">
-              No transactions match your search or filters.
-              Try changing your filters or click Clear Filters.
+              No transactions match your search or filters. Try changing your
+              filters or click Clear Filters.
             </p>
           ) : (
             <div className="transaction-list">
