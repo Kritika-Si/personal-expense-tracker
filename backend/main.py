@@ -35,7 +35,6 @@ app.add_middleware(
 
 app.include_router(transactions_router)
 
-
 @app.get("/")
 def home():
     return {
