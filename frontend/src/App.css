@@ -3,26 +3,32 @@
   min-height: 100vh;
 }
 
+
 .app {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 24px;
+  box-sizing: border-box;
 }
+
+
 
 .app-header {
   margin-bottom: 40px;
+  text-align: center;
 }
 
 .app-header h1 {
   font-size: 32px;
   margin-bottom: 10px;
-  color: #1e293b;
+  color: var(--text-primary, #312e81);
 }
 
 .app-header p {
-  color: #64748b;
+  color: var(--text-secondary, #6b6285);
   font-size: 16px;
 }
+
 
 .dashboard {
   display: flex;
@@ -661,5 +667,265 @@
 
   .transaction-actions {
     flex-wrap: wrap;
+  }
+}
+
+
+/* ========================================
+   LAVENDER LUXE THEME OVERRIDES
+   ======================================== */
+
+body {
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+.app {
+  color: var(--text-primary);
+}
+
+/* Center the heading and place the theme toggle on the right */
+.app-header {
+  margin-bottom: 32px;
+}
+
+.header-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-title {
+  text-align: center;
+}
+
+.header-title h1 {
+  color: var(--text-primary);
+  font-size: clamp(24px, 3vw, 34px);
+  margin-bottom: 10px;
+}
+
+.header-title p {
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.theme-toggle {
+  justify-self: end;
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+/* Main cards and sections */
+.summary-card,
+.transactions-section,
+.analytics-section,
+.month-filter-section {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.summary-card h3,
+.month-filter-heading p,
+.month-filter-controls label,
+.filter-control label,
+.filter-results-count,
+.empty-message {
+  color: var(--text-secondary);
+}
+
+.summary-card h2,
+.section-header h2,
+.analytics-section h2,
+.month-filter-heading h2 {
+  color: var(--text-primary);
+}
+
+.summary-card.income {
+  border-left-color: #34d399;
+}
+
+.summary-card.expense {
+  border-left-color: #f472b6;
+}
+
+.summary-card.balance {
+  border-left-color: var(--accent);
+}
+
+/* Inputs and filter areas */
+.transaction-filters {
+  background: var(--surface-secondary);
+  border-color: var(--border-color);
+}
+
+input,
+select,
+textarea {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-soft);
+}
+
+.all-months-btn,
+.add-btn {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.all-months-btn:hover,
+.add-btn:hover {
+  background: var(--accent-hover);
+}
+
+.all-months-btn:disabled,
+.add-btn:disabled,
+.export-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Transaction rows */
+.transaction-item {
+  background: var(--surface-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.transaction-item h3,
+.transaction-item h4,
+.transaction-item p,
+.transaction-item span {
+  color: var(--text-primary);
+}
+
+/* Keep the income/expense colors readable */
+.income,
+.income h2 {
+  color: var(--text-primary);
+}
+
+.expense,
+.expense h2 {
+  color: var(--text-primary);
+}
+
+/* Error messages */
+.error-message {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
+[data-theme="dark"] .error-message {
+  background: #451f35;
+  color: #fecdd3;
+  border-color: #813d65;
+}
+
+/* Modals and transaction forms */
+.form-overlay {
+  background: rgba(20, 12, 35, 0.65);
+}
+
+.form-container {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.form-container h2,
+.form-container h3,
+.form-container label {
+  color: var(--text-primary);
+}
+
+.form-container input,
+.form-container select,
+.form-container textarea {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+/* Recharts tooltip colors */
+.recharts-default-tooltip {
+  background-color: var(--surface) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.recharts-tooltip-item,
+.recharts-tooltip-label {
+  color: var(--text-primary) !important;
+}
+
+/* Smooth theme transition */
+.summary-card,
+.transactions-section,
+.analytics-section,
+.month-filter-section,
+.transaction-item,
+.transaction-filters,
+.form-container,
+input,
+select,
+textarea {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* Responsive heading and toggle */
+@media (max-width: 700px) {
+  .header-top {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .header-spacer {
+    display: none;
+  }
+
+  .header-title {
+    grid-row: 1;
+  }
+
+  .theme-toggle {
+    grid-row: 2;
+    justify-self: center;
   }
 }
