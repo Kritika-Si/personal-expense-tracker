@@ -3,16 +3,14 @@ import os
 import sqlite3
 from pathlib import Path
 
-# Use the deployment-provided path when available.
-# Otherwise, keep the existing local database location.
+# Use DATABASE_PATH when explicitly configured.
+# Otherwise, use the existing local SQLite database.
+default_database_path = Path(__file__).resolve().parent / "expenses.db"
 DATABASE_PATH = Path(
-    os.getenv(
-        "DATABASE_PATH",
-        str(Path(__file__).resolve().parent / "expenses.db"),
-    )
-)
+    os.getenv("DATABASE_PATH", str(default_database_path))
+).expanduser()
 
-# Ensure the database directory exists.
+# Create the database directory if it does not exist.
 DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
