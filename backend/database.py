@@ -1,8 +1,19 @@
 
+import os
 import sqlite3
 from pathlib import Path
 
-DATABASE_PATH = Path(__file__).resolve().parent / "expenses.db"
+# Use the deployment-provided path when available.
+# Otherwise, keep the existing local database location.
+DATABASE_PATH = Path(
+    os.getenv(
+        "DATABASE_PATH",
+        str(Path(__file__).resolve().parent / "expenses.db"),
+    )
+)
+
+# Ensure the database directory exists.
+DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_connection():
