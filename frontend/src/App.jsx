@@ -389,7 +389,20 @@ function App() {
             </button>
           </div>
         </section>
+        <section className="quick-actions">
+  <div className="quick-actions-text">
+    <h2>Manage Your Transactions</h2>
+    <p>Add your income or expenses to keep your dashboard up to date.</p>
+  </div>
 
+  <button
+    type="button"
+    className="add-btn quick-add-btn"
+    onClick={handleAdd}
+  >
+    + Add Transaction
+  </button>
+</section>
         <section className="summary-section">
           <div className="summary-card income">
             <h3>Total Income</h3>
